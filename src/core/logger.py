@@ -1,31 +1,45 @@
 import logging
-from logging import FileHandler, Formatter
+import sys
+from logging import FileHandler, StreamHandler, Formatter
 
-class Logger:
+
+class Loggers:
+    """Class for logging messages to stdout and to log files. Contains different types of loggers
+    as class variables that will all point to the specified log_dir."""
     def __init__(self, log_dir):
+        """
+        Constructs a logger to log to the specified directory.
+        :param log_dir: Directory to send log files to.
+        """
         self.log_dir = log_dir
+        self.standard_logger = self.get_logger('standard')
+        self.referee_logger = self.get_logger('referee', True)
 
-        STD_LOG_FORMAT = "%(asctime)s [%(levelname)s]: %(message)s"
-        REF_LOG_FORMAT = "C %(asctime)s [%(levelname)s]: %(message)s"
+    def get_logger(self, name, is_ref=False):
+        """
+        Constructs a logger with the given name.
+        :param name: The name of the logger. Always assigned as 'deepothello.(name)' in the logger itself.
+        :param is_ref: Whether to save logs and output in format compatible with CSCI 312 referee.
+        """
+        fmt = "%(asctime)s [%(levelname)s]: %(message)s in %(pathname)s:%(lineno)d"
+        if is_ref:
+            fmt = f'C {fmt}'
 
-        REF_LOG_FILE = f'{self.log_dir}/deepothello_referee.log'
-        STD_LOG_FILE = f'{self.log_dir}/deepothello_standard.log'
+        file = f'{self.log_dir}/deepothello_{name}.log'
+        log_level = logging.DEBUG
 
-        LOG_LEVEL = logging.DEBUG
+        logger = logging.getLogger(f'deepothello.{name}')
+        logger.setLevel(log_level)
 
-        # Referee logger
-        self.referee_logger = logging.getLogger('deepothello.referee')
-        self.referee_logger.setLevel(LOG_LEVEL)
-        _referee_logger_file_handler = FileHandler(REF_LOG_FILE)
-        _referee_logger_file_handler.setLevel(LOG_LEVEL)
-        _referee_logger_file_handler.setFormatter(Formatter(REF_LOG_FORMAT))
-        self.referee_logger.addHandler(_referee_logger_file_handler)
+        file_handler = FileHandler(file)
+        file_handler.setLevel(log_level)
+        file_handler.setFormatter(Formatter(fmt))
 
-        # Standard logger
-        self.standard_logger = logging.getLogger('deepothello.standard')
-        self.standard_logger.setLevel(LOG_LEVEL)
-        _standard_logger_file_handler = FileHandler(STD_LOG_FILE)
-        _standard_logger_file_handler.setLevel(LOG_LEVEL)
-        _standard_logger_file_handler.setFormatter(Formatter(STD_LOG_FORMAT))
-        self.standard_logger.addHandler(_standard_logger_file_handler)
+        stream_handler = StreamHandler(sys.stdout)
+        stream_handler.setLevel(log_level)
+        stream_handler.setFormatter(Formatter(fmt))
 
+        logger.addHandler(file_handler)
+        logger.addHandler(stream_handler)
+
+        return logger
