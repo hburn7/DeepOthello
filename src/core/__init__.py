@@ -3,6 +3,7 @@ import sys
 from .config import Config
 from othello import color
 
+
 def parse_args(args=None):
     if args is None:
         args = sys.argv[1:]
@@ -31,3 +32,12 @@ def parse_args(args=None):
                         help='Alters log directory to specified directory. Input should be '
                              'an absolute path or relative path to the project\'s root directory.')
     return parser.parse_args(args)
+
+def init_config():
+    args = sys.argv[1:]
+    parsed = parse_args(args)
+    return Config(referee_compatibility=parsed.referee_compatible, ai_game_time=parsed.ai_game_time, ai_color=parsed.ai_color,
+                  interactive=parsed.interactive, gui=parsed.gui, log_dir=parsed.log_dir)
+
+config = init_config()
+logger = config.active_logger

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from core.logger import Loggers
+from core.logger import Logger
 from othello import color
 
 class Config:
@@ -23,7 +23,7 @@ class Config:
         self.gui = gui
         self.log_dir = log_dir.strip()
 
-        _logger = Loggers(self.log_dir)
+        _logger = Logger(self.log_dir)
         self.active_logger = _logger.referee_logger if self.ref_compatibility else _logger.standard_logger
 
         self._init_log_dir()
