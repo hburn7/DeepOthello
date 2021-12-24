@@ -8,6 +8,6 @@ def as_str(color: int) -> str:
     :param color: The color to represent as a string
     :return: String representation of color
     """
-    if color not in [-1, 1]:
-        return 'Undefined'
+    if color not in [BLACK, WHITE]:
+        raise ValueError(f'Color must be {BLACK} or {WHITE}.')
     return 'BLACK' if color == BLACK else 'WHITE'
