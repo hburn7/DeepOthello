@@ -1,5 +1,5 @@
 import numpy as np
-from core import config, logger
+
 from othello import color
 
 
