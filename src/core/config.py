@@ -1,6 +1,7 @@
-from othello import color
 from pathlib import Path
-from .logger import Logger
+
+from core.logger import Loggers
+from othello import color
 
 class Config:
     def __init__(self, referee_compatibility: bool = False, ai_game_time: int = 600, ai_color: int = color.BLACK,
@@ -22,10 +23,11 @@ class Config:
         self.gui = gui
         self.log_dir = log_dir.strip()
 
-        _logger = Logger(self.log_dir)
+        _logger = Loggers(self.log_dir)
         self.active_logger = _logger.referee_logger if self.ref_compatibility else _logger.standard_logger
 
         self._init_log_dir()
+        self.active_logger.debug(f'Initialized {self}')
 
     def __repr__(self):
         return f'Config(referee_compatibility={self.ref_compatibility}, ai_game_time={self.ai_game_time}, ' \
