@@ -3,7 +3,7 @@ import sys
 from logging import FileHandler, StreamHandler, Formatter
 
 
-class Loggers:
+class Logger:
     """Class for logging messages to stdout and to log files. Contains different types of loggers
     as class variables that will all point to the specified log_dir."""
     def __init__(self, log_dir):
