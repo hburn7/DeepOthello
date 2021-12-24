@@ -31,12 +31,3 @@ def parse_args(args=None):
                         help='Alters log directory to specified directory. Input should be '
                              'an absolute path or relative path to the project\'s root directory.')
     return parser.parse_args(args)
-
-
-def cfg(args=None):
-    if args is None:
-        args = sys.argv[1:]
-
-    args = parse_args(args)
-    return Config(referee_compatibility=args.referee_compatible, ai_game_time=args.ai_game_time, ai_color=args.ai_color,
-                  interactive=args.interactive, gui=args.gui, log_dir=args.log_dir)
