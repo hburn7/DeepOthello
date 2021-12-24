@@ -20,9 +20,9 @@ class Config:
         self.ai_color = ai_color
         self.interactive = interactive
         self.gui = gui
-        self.log_dir = log_dir
+        self.log_dir = log_dir.strip()
 
-        _logger = Logger(log_dir)
+        _logger = Logger(self.log_dir)
         self.active_logger = _logger.referee_logger if self.ref_compatibility else _logger.standard_logger
 
         self._init_log_dir()
@@ -34,7 +34,6 @@ class Config:
 
     def _init_log_dir(self):
         p = Path(f'./{self.log_dir}')
-        print(p.absolute())
         if not p.exists():
             p.mkdir()
 
