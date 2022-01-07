@@ -1,6 +1,7 @@
 # Custom
 logs/
 src/test/test_logs/
+.vscode/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
