@@ -28,7 +28,7 @@ def parse_args(args=None):
                              'Default behavior is AI vs. AI.')
     parser.add_argument('-g', '--gui', action='store_true',
                         help='Toggles playing through the GUI. (Currently not implemented)')
-    parser.add_argument('-l', '--log_dir', default='../../logs/',
+    parser.add_argument('-l', '--log_dir', default='logs',
                         help='Alters log directory to specified directory. Input should be '
                              'an absolute path or relative path to the project\'s root directory.')
     return parser.parse_args(args)
@@ -36,8 +36,8 @@ def parse_args(args=None):
 def init_config():
     args = sys.argv[1:]
     parsed = parse_args(args)
-    return Config(referee_compatibility=parsed.referee_compatible, ai_game_time=parsed.ai_game_time, ai_color=parsed.ai_color,
+    return config.Config(referee_compatibility=parsed.referee_compatible, ai_game_time=parsed.ai_game_time, ai_color=parsed.ai_color,
                   interactive=parsed.interactive, gui=parsed.gui, log_dir=parsed.log_dir)
 
-config = init_config()
-logger = config.active_logger
+cfg = init_config()
+logger = cfg.active_logger

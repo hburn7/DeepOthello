@@ -1,7 +1,7 @@
 import sys
 import pyfiglet
-from config import Config
 from core import config, logger
+from core.config import Config
 
 def greeting():
     """

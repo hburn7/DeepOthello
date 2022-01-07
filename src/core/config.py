@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from core.logger import Logger
+from .logger import Logger
 from othello import color
 
 class Config:
     def __init__(self, referee_compatibility: bool = False, ai_game_time: int = 600, ai_color: int = color.BLACK,
-                 interactive=False, gui=False, log_dir='./logs'):
+                 interactive=False, gui=False, log_dir='logs'):
         """
         Settings for program behavior. All configuration options
         are handled through program arguments.
@@ -23,10 +23,10 @@ class Config:
         self.gui = gui
         self.log_dir = log_dir.strip()
 
+        self._init_log_dir()
         _logger = Logger(self.log_dir)
         self.active_logger = _logger.referee_logger if self.ref_compatibility else _logger.standard_logger
 
-        self._init_log_dir()
 
     def __repr__(self):
         return f'Config(referee_compatibility={self.ref_compatibility}, ai_game_time={self.ai_game_time}, ' \
@@ -34,7 +34,8 @@ class Config:
                f'log_dir={self.log_dir})'
 
     def _init_log_dir(self):
-        p = Path(f'./{self.log_dir}')
+        # Assumes root path [Path('.')] is equal to "DeepOthello/".
+        p = Path(f'{self.log_dir}')
         if not p.exists():
             p.mkdir()
 
