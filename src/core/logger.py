@@ -1,5 +1,5 @@
-import logging
 import sys
+import logging
 from logging import FileHandler, StreamHandler, Formatter
 
 

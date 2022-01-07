@@ -6,7 +6,7 @@ from core.config import Config
 
 class TestLogger(unittest.TestCase):
     def test_referee_logger(self):
-        cfg = Config(referee_compatibility=True, log_dir='./test_logs')
+        cfg = Config(referee_compatibility=True, log_dir='test_logs')
         logger = Logger(cfg.log_dir)
 
         ref_path = Path(f'{logger.log_dir}/deepothello_referee.log')
