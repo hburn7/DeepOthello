@@ -11,6 +11,7 @@ def greeting():
     """
     return pyfiglet.figlet_format('DeepOthello', font='speed')
 
+
 def main():
     # Greeting log
     for line in greeting().splitlines():
