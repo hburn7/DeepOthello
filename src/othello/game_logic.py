@@ -13,12 +13,10 @@ class Move:
     def __repr__(self):
         return f'Move(c={self.color} ({color.as_str(self.color)}), pos={self.pos}, is_pass={self.is_pass})'
 
-
-BLACK_BITS = np.uint64(0x0000000810000000)
-WHITE_BITS = np.uint64(0x0000001008000000)
-
-
 class BitBoard:
+    BLACK_BITS = np.uint64(0x0000000810000000)
+    WHITE_BITS = np.uint64(0x0000001008000000)
+
     def __init__(self, c, bits=np.uint64(0)):
         self.color = c
 
@@ -26,9 +24,9 @@ class BitBoard:
             self.bits = bits
         else:  # Initialize default
             if self.color == color.BLACK:
-                self.bits = BLACK_BITS
+                self.bits = self.BLACK_BITS
             else:
-                self.bits = WHITE_BITS
+                self.bits = self.WHITE_BITS
 
     def __repr__(self):
         return f'BitBoard(color={self.color} ({color.as_str(self.color)}, bits={self.bits} ({np.binary_repr(self.bits)}))'
