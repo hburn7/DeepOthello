@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import othello.game_logic as game_logic
 
-from othello.game_logic import Move, BitBoard
+from othello.game_logic import Move, BitBoard, GameBoard
 from othello import color
 
 VALID_POSITIONS = [x for x in range(64)]
@@ -19,14 +19,14 @@ class TestBitBoard(unittest.TestCase):
         bb_black = BitBoard(color.BLACK)
         bb_white = BitBoard(color.WHITE)
 
-        self.assertTrue(bb_black.bits == game_logic.BLACK_BITS)
-        self.assertTrue(bb_white.bits == game_logic.WHITE_BITS)
+        self.assertTrue(bb_black.bits == BitBoard.BLACK_BITS)
+        self.assertTrue(bb_white.bits == BitBoard.WHITE_BITS)
 
     def test_set_bit(self):
         for p in VALID_POSITIONS:
             copy = BitBoard(color.BLACK)
             copy.set_bit(p)
-            reference = game_logic.BLACK_BITS | np.uint64(1 << p)
+            reference = BitBoard.BLACK_BITS | np.uint64(1 << p)
             self.assertTrue(copy.bits == reference)
 
         bad = [-1, 65]
@@ -63,6 +63,20 @@ class TestBitBoard(unittest.TestCase):
             copy.disable_bit(p)
 
         self.assertTrue(copy.bitcount() == 0)
+
+    def test_get_bitboard(self):
+        black = BitBoard(color.BLACK)
+        white = BitBoard(color.WHITE)
+
+        # Test black retrieval
+        board = GameBoard(black, white)
+        result = board._get_bitboard(color.BLACK)
+        self.assertTrue(black.bits == result.bits)
+
+        # Test white retrieval
+        board = GameBoard(white, black)
+        result = board._get_bitboard(color.WHITE)
+        self.assertTrue(white.bits == result.bits)
 
 
 if __name__ == '__main__':

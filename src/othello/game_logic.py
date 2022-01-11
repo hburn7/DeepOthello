@@ -82,3 +82,34 @@ class GameBoard:
 
     def __repr__(self):
         return f'GameBoard(player_board={self.player_board}, opp_board={self.opp_board})'
+
+    def _get_bitboard(self, c):
+        """
+        Returns a bitboard based on the color
+        :param c: Color of the bitboard we want to retrieve
+        """
+        return self.player_board if c == self.p_color else self.opp_board
+
+    def draw(self):
+        logger.info('    A B C D E F G H')
+        logger.info('    * * * * * * * *')
+
+        black = self._get_bitboard(color.BLACK)
+        white = self._get_bitboard(color.WHITE)
+
+        line = ''
+        for i in range(63, -1, -1):
+            if i % 8 == 7:
+                line += f'{int(-(i / 8) + 9)} * '
+
+            if black.get_bit_state(i):
+                line += 'B '
+            elif white.get_bit_state(i):
+                line += 'W '
+            else:
+                line += '- '
+
+            if i % 8 == 0:
+                logger.info(line)
+                line = ''
+
