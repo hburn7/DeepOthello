@@ -18,6 +18,9 @@ class BitBoard:
     WHITE_BITS = np.uint64(0x0000001008000000)
 
     def __init__(self, c, bits=np.uint64(0)):
+        if not isinstance(bits, np.uint64):
+            raise ValueError(f"Expected bits to be of type np.uint64, received {bits} instead.")
+
         self.color = c
 
         if bits != np.uint64(0):
@@ -125,6 +128,49 @@ class GameBoard:
             if i % 8 == 0:
                 logger.info(line)
                 line = ''
+
+    def generate_move_mask(self, p_gen=True) -> np.uint64:
+        """
+        Generates moves for the initial player by default.
+        :param p_gen: Determines whether to generate moves for the player or the opponent. Generate
+        moves for the current player by default, set to False to generate for opponent.
+        :return: A uint64 bitmask containing 1s where the player can move.
+        """
+        player_bits = self.player_board.bits
+        opponent_bits = self.opp_board.bits
+
+        if not p_gen:
+            player_bits = self.opp_board.bits
+            opponent_bits = self.player_board.bits
+
+        empty_mask = ~player_bits & ~opponent_bits
+        move_mask = np.uint64(0)
+
+        for i in range(self.DIR_COUNT):
+            # Finds opponent disks that are adjacent to player disks in current direction
+            hold_mask = player_bits
+
+            if self.DIR_INCREMENTS[i] > 0:
+                hold_mask = (hold_mask << np.uint64(self.DIR_INCREMENTS[i])) & self.DIR_MASKS[i]
+            else:
+                hold_mask = (hold_mask >> -np.uint64(self.DIR_INCREMENTS[i])) & self.DIR_MASKS[i]
+
+            hold_mask = hold_mask & opponent_bits
+
+            for j in range(6):
+                if not (j < 6) & (hold_mask != 0):
+                    break
+
+                if self.DIR_INCREMENTS[i] > 0:
+                    hold_mask = (hold_mask << np.uint64(self.DIR_INCREMENTS[i])) & self.DIR_MASKS[i]
+                else:
+                    hold_mask = (hold_mask >> -np.uint64(self.DIR_INCREMENTS[i])) & self.DIR_MASKS[i]
+
+                dir_move_mask = hold_mask & empty_mask
+                move_mask |= dir_move_mask
+                hold_mask &= (~dir_move_mask & opponent_bits)
+
+        return move_mask
 
     def count(self):
         """

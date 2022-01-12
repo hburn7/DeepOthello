@@ -92,5 +92,29 @@ class TestBitBoard(unittest.TestCase):
 
         self.assertTrue(result.bits == white.bits)
 
+    def test_move_generation(self):
+        black = BitBoard(color.BLACK)
+        white = BitBoard(color.WHITE)
+        board = GameBoard(black, white)
+
+        # Default, black
+        mask = board.generate_move_mask()
+        known_possible_black_init = np.array([19, 26, 37, 44], dtype=np.uint64)
+        known_possible_white_init = np.array([20, 29, 34, 43], dtype=np.uint64)
+
+        for x in known_possible_black_init:
+            s = (np.uint64(1) << x) & mask != 0
+            self.assertTrue(s, f'Expected bit {x} to be set in {mask}.')
+
+        # Default, white
+        board = GameBoard(white, black)
+        mask = board.generate_move_mask()
+
+        for x in known_possible_white_init:
+            s = (np.uint64(1) << x) & mask != 0
+            self.assertTrue(s, f'Expected bit {x} to be set in {mask}.')
+
+        # TODO: Write tests for various stages in the game.
+
 if __name__ == '__main__':
     unittest.main()
