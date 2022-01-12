@@ -1,12 +1,9 @@
 import unittest
 import numpy as np
-import othello.game_logic as game_logic
-
 from othello.game_logic import Move, BitBoard, GameBoard
 from othello import color
 
 VALID_POSITIONS = [x for x in range(64)]
-
 
 class TestMove(unittest.TestCase):
     def test_default(self):
@@ -70,14 +67,30 @@ class TestBitBoard(unittest.TestCase):
 
         # Test black retrieval
         board = GameBoard(black, white)
-        result = board._get_bitboard(color.BLACK)
+        result = board.get_bitboard(color.BLACK)
         self.assertTrue(black.bits == result.bits)
 
         # Test white retrieval
         board = GameBoard(white, black)
-        result = board._get_bitboard(color.WHITE)
+        result = board.get_bitboard(color.WHITE)
         self.assertTrue(white.bits == result.bits)
 
+    def test_set_bitboard(self):
+        black = BitBoard(color.BLACK)
+        white = BitBoard(color.WHITE)
+        board = GameBoard(black, white)
+
+        black.set_bit(63)
+        board.set_bitboard(black)
+        result = board.get_bitboard(board.p_color)
+
+        self.assertTrue(result.bits == black.bits)
+
+        white.set_bit(62)
+        board.set_bitboard(white)
+        result = board.get_bitboard(board.o_color)
+
+        self.assertTrue(result.bits == white.bits)
 
 if __name__ == '__main__':
     unittest.main()

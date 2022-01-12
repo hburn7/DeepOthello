@@ -83,19 +83,32 @@ class GameBoard:
     def __repr__(self):
         return f'GameBoard(player_board={self.player_board}, opp_board={self.opp_board})'
 
-    def _get_bitboard(self, c):
+    def get_bitboard(self, c):
         """
         Returns a bitboard based on the color
         :param c: Color of the bitboard we want to retrieve
         """
         return self.player_board if c == self.p_color else self.opp_board
 
+    def set_bitboard(self, b: BitBoard):
+        """
+        Automatically updates the appropriate bitboard in the GameBoard to the new
+        object provided. This is done via color.
+        """
+        if b.color == color.BLACK or b.color == color.WHITE:
+            if self.p_color == b.color:
+                self.player_board = b
+            else:
+                self.opp_board = b
+        else:
+            raise Exception(f"Expected bitboard with color BLACK or WHITE. Received '{b}' instead.")
+
     def draw(self):
         logger.info('    A B C D E F G H')
         logger.info('    * * * * * * * *')
 
-        black = self._get_bitboard(color.BLACK)
-        white = self._get_bitboard(color.WHITE)
+        black = self.get_bitboard(color.BLACK)
+        white = self.get_bitboard(color.WHITE)
 
         line = ''
         for i in range(63, -1, -1):
@@ -112,4 +125,12 @@ class GameBoard:
             if i % 8 == 0:
                 logger.info(line)
                 line = ''
+
+    def count(self):
+        """
+        Counts the number of set bits across both bitboards.
+        """
+        return self.player_board.bitcount() + self.opp_board.bitcount()
+
+
 
