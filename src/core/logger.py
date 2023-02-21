@@ -1,45 +1,41 @@
 import sys
 import logging
+from pathlib import Path
 from logging import FileHandler, StreamHandler, Formatter
 
 
-class Logger:
-    """Class for logging messages to stdout and to log files. Contains different types of Logger
-    as class variables that will all point to the specified log_dir."""
-    def __init__(self, log_dir):
-        """
-        Constructs a logger to log to the specified directory.
-        :param log_dir: Directory to send log files to.
-        """
-        self.log_dir = log_dir
-        self.standard_logger = self.get_logger('standard')
-        self.referee_logger = self.get_logger('referee', True)
+def _init_log_dir():
+    # Assumes root path [Path('.')] is equal to "DeepOthello/".
+    p = Path(f'./logs')
+    if not p.exists():
+        p.mkdir()
 
-    def get_logger(self, name, is_ref=False):
-        """
-        Constructs a logger with the given name.
-        :param name: The name of the logger. Always assigned as 'deepothello.(name)' in the logger itself.
-        :param is_ref: Whether to save logs and output in format compatible with CSCI 312 referee.
-        """
-        fmt = "%(asctime)s [%(levelname)s]: %(message)s in %(pathname)s:%(lineno)d"
-        if is_ref:
-            fmt = f'C {fmt}'
 
-        file = f'{self.log_dir}/deepothello_{name}.log'
-        log_level = logging.DEBUG
+def get_logger(name):
+    """
+    Constructs a logger with the given name.
+    """
+    fmt = "%(asctime)s [%(levelname)s]: %(message)s in %(pathname)s:%(lineno)d"
 
-        logger = logging.getLogger(f'deepothello.{name}')
-        logger.setLevel(log_level)
+    file = f'logs/deepothello.log'
+    log_level = logging.DEBUG
 
-        file_handler = FileHandler(file)
-        file_handler.setLevel(log_level)
-        file_handler.setFormatter(Formatter(fmt))
+    logger = logging.getLogger(name)
+    logger.setLevel(log_level)
 
-        stream_handler = StreamHandler(sys.stdout)
-        stream_handler.setLevel(log_level)
-        stream_handler.setFormatter(Formatter(fmt))
+    file_handler = FileHandler(file)
+    file_handler.setLevel(log_level)
+    file_handler.setFormatter(Formatter(fmt))
 
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
+    stream_handler = StreamHandler(sys.stdout)
+    stream_handler.setLevel(log_level)
+    stream_handler.setFormatter(Formatter(fmt))
 
-        return logger
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+    return logger
+
+
+_init_log_dir()
+logger = get_logger('deepothello')

@@ -1,19 +1,15 @@
 import argparse
 import sys
-from .config import Config
-from othello import color
+from src.core.config import Config
+from src.othello import color
 
 
 def parse_args(args=None):
     if args is None:
         args = sys.argv[1:]
 
-    parser = argparse.ArgumentParser(description='DeepOthello, created by Harry Burnett & Eric Dunbar. '
+    parser = argparse.ArgumentParser(description='DeepOthello, created by Harry Burnett.'
                                                  'Specify configuration options if desired.')
-    parser.add_argument('-ref', '--referee_compatible', action='store_true',
-                        help='Toggles logging in a way that is '
-                             'compatible with the CSCI 312 referee. If you aren\'t '
-                             'sure what this means, it can be left alone.')
     parser.add_argument('-t', '--ai_game_time', metavar='N', type=int, default=600,
                         help='Total time in seconds that is allotted to the AI '
                              'for the entire game. The higher this value, the longer '
@@ -33,11 +29,13 @@ def parse_args(args=None):
                              'an absolute path or relative path to the project\'s root directory.')
     return parser.parse_args(args)
 
+
 def init_config():
     args = sys.argv[1:]
     parsed = parse_args(args)
-    return config.Config(referee_compatibility=parsed.referee_compatible, ai_game_time=parsed.ai_game_time, ai_color=parsed.ai_color,
-                  interactive=parsed.interactive, gui=parsed.gui, log_dir=parsed.log_dir)
+    return Config(ai_game_time=parsed.ai_game_time,
+                  ai_color=parsed.ai_color,
+                  interactive=parsed.interactive, gui=parsed.gui)
+
 
 cfg = init_config()
-logger = cfg.active_logger
