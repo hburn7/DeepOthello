@@ -36,6 +36,10 @@ def main():
         b = board.opp_board
 
         legal_w = board.legal_moves(w, b)
+        if len(legal_w) == 0:
+            # Pass
+            logger.info('White passes')
+            continue
 
         # select random move
         mw = random.choice(legal_w)
@@ -46,6 +50,10 @@ def main():
 
         if not board.is_game_complete():
             legal_b = board.legal_moves(b, w)
+
+            if len(legal_b) == 0:
+                logger.info('Black passes')
+                continue
 
             mb = random.choice(legal_b)
             board.apply_move(b, mb)
