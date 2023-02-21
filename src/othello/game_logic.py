@@ -157,7 +157,7 @@ class GameBoard:
         self._set_for_color(b)
         self._line_cap(m)
 
-    def _is_game_complete(self):
+    def is_game_complete(self):
         p_bits = self.player_board.bits
         o_bits = self.opp_board.bits
 
