@@ -1,4 +1,5 @@
 import logging
+import math
 import numpy as np
 
 from src.core import config
@@ -14,7 +15,7 @@ WHITE_BITS = np.uint64(0x0000001008000000)
 DIR_COUNT = 8
 UNIVERSE = np.uint64(0xffffffffffffffff)
 
-DIR_INCREMENTS = [8, 9, 1, -7, -8, -9, -1, 7]
+DIR_INCREMENTS = np.array([8, 9, 1, -7, -8, -9, -1, 7], dtype=np.uint64)
 DIR_MASKS = np.array([
     0xFFFFFFFFFFFFFF00,  # North
     0xFEFEFEFEFEFEFE00,  # NorthWest
@@ -25,8 +26,6 @@ DIR_MASKS = np.array([
     0x7F7F7F7F7F7F7F7F,  # East
     0x7F7F7F7F7F7F7F00  # NorthEast
 ], dtype=np.uint64)
-
-
 
 
 def opposite(c):
@@ -43,7 +42,15 @@ class Move:
         self.is_pass = is_pass
 
     def __repr__(self):
-        return f'Move(c={self.color} (pos={self.pos}, is_pass={self.is_pass})'
+        return f'Move([{self.pos_to_str()}] c={self.color} (pos={self.pos}, is_pass={self.is_pass})'
+
+    def pos_to_str(self):
+        # This is wrong
+        i = self.pos + 1
+        letters = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
+        letter_idx = int(math.floor(i / 8))
+        remainder = i % 8
+        return f'{letters[letter_idx]} {remainder}'
 
 
 class BitBoard:
@@ -92,17 +99,6 @@ class BitBoard:
         self.set_bit(1 << m.pos)
 
 
-def possible_moves(b: BitBoard):
-    """Returns a list of all possible moves for the given bitboard"""
-    r = []
-    for i in range(64):
-        mask = 1 << i
-        if (mask & b.bits) != 0:
-            r.append(Move(b.color, i, False))
-
-    return r
-
-
 class GameBoard:
     def __init__(self, player_board: BitBoard, opp_board: BitBoard):
         self.p_color = player_board.color
@@ -114,12 +110,23 @@ class GameBoard:
     def __repr__(self):
         return f'GameBoard(player_board={self.player_board}, opp_board={self.opp_board})'
 
+    def legal_moves(self, b: BitBoard, o: BitBoard):
+        """Returns a list of all possible moves for the given bitboard"""
+        r = []
+        move_mask = self.__generate_move_mask(b.bits, o.bits)
+        for i in range(64):
+            mask = np.uint64(1 << i)
+            if (mask & move_mask) != 0:
+                r.append(Move(b.color, i, False))
+
+        return r
+
     def _get_bitboard(self, c):
         """
         Returns a bitboard based on the color
         :param c: Color of the bitboard we want to retrieve
         """
-        return self.player_board if c is self.p_color else self.opp_board
+        return self.player_board if c == self.p_color else self.opp_board
 
     def print(self):
         logger.info('    A B C D E F G H')
@@ -188,7 +195,7 @@ class GameBoard:
         self_bits = b.bits
         o_bits = opp.bits
 
-        mask = 1 << m.pos
+        mask = np.uint64(1 << m.pos)
         f_fin = 0
         possibility = 0
 
@@ -225,9 +232,9 @@ class GameBoard:
 
     def __update_hold_mask(self, hold_mask, i):
         if DIR_INCREMENTS[i] > 0:
-            hold_mask = (hold_mask << DIR_INCREMENTS[i]) & DIR_MASKS[i]
+            hold_mask = np.uint64(hold_mask << DIR_INCREMENTS[i]) & DIR_MASKS[i]
         else:
-            hold_mask = (hold_mask >> -DIR_INCREMENTS[i]) & DIR_MASKS[i]
+            hold_mask = np.uint64(hold_mask >> -DIR_INCREMENTS[i]) & DIR_MASKS[i]
         return hold_mask
 
     def count_pieces(self, c):

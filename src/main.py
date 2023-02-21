@@ -30,7 +30,8 @@ def main():
     board = GameBoard(bw, bb)
     board.print()
 
-    logger.info('hello')
+    legal = board.legal_moves(board.player_board, board.opp_board)
+    print(legal)
 
 
 if __name__ == '__main__':
