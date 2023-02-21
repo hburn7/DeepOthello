@@ -12,7 +12,7 @@ BLACK = -1
 
 BLACK_BITS = np.uint64(0x0000000810000000)
 WHITE_BITS = np.uint64(0x0000001008000000)
-DIR_COUNT = 8
+DIRECTION_COUNT = 8
 UNIVERSE = np.uint64(0xffffffffffffffff)
 
 DIR_INCREMENTS = np.array([8, 9, 1, -7, -8, -9, -1, 7], dtype=np.uint64)
@@ -113,7 +113,7 @@ class GameBoard:
     def legal_moves(self, b: BitBoard, o: BitBoard):
         """Returns a list of all possible moves for the given bitboard"""
         r = []
-        move_mask = self.__generate_move_mask(b.bits, o.bits)
+        move_mask = self._generate_move_mask(b, o)
         for i in range(64):
             mask = np.uint64(1 << i)
             if (mask & move_mask) != 0:
@@ -151,43 +151,62 @@ class GameBoard:
                 logger.info(line)
                 line = ''
 
-    def __apply_move(self, b: BitBoard, m: Move):
+    def apply_move(self, b: BitBoard, m: Move):
         b.apply_move(m)
 
         self.__set_for_color(b)
 
-    def __is_game_complete(self):
+    def _is_game_complete(self):
         p_bits = self.player_board.bits
         o_bits = self.opp_board.bits
 
-        p_legal = self.__generate_move_mask(p_bits, o_bits)
-        o_legal = self.__generate_move_mask(o_bits, p_bits)
+        p_legal = self._generate_move_mask(self.player_board, self.opp_board)
+        o_legal = self._generate_move_mask(self.opp_board, self.player_board)
 
         return (p_legal == 0 and o_legal == 0) or (p_bits | o_bits) == UNIVERSE
 
-    def __generate_move_mask(self, p_bits: np.uint64, o_bits: np.uint64) -> np.uint64:
-        empty_mask = ~p_bits & ~o_bits
-        move_mask = np.uint64(0)
+    def _generate_move_mask(self, p, o):
+        current_board = p.bits
+        opponent_board = o.bits
 
-        for i in range(DIR_COUNT):
-            hold_mask = p_bits
+        # Initialize an empty bitboard to store the legal moves
+        legal_moves_board = np.uint64(0)
 
-            # Finds opponent disks that are adjacent to player disks
-            # in the current direction
-            hold_mask = self.__update_hold_mask(hold_mask, i)
-            hold_mask = hold_mask & o_bits
+        # Loop over all squares on the board
+        for square in range(64):
+            # If the square is already occupied, it's not a legal move
+            if ((current_board >> np.uint64(square)) & np.uint64(1)) or ((opponent_board >> np.uint64(square)) & np.uint64(1)):
+                continue
 
-            j = 0
-            while (j < 6) & (hold_mask != 0):
-                hold_mask = self.__update_hold_mask(hold_mask, i)
+            # Check each direction for a potential capture
+            for direction in [-9, -8, -7, -1, 1, 7, 8, 9]:
+                # Initialize variables to keep track of the current position and potential captures
+                pos = square + direction
+                num_captures = 0
+                captures_board = np.uint64(0)
 
-                dir_move_mask = hold_mask & empty_mask
-                move_mask |= dir_move_mask
-                hold_mask &= (~dir_move_mask & o_bits)
+                # Move along the current direction until a capture is found or the edge of the board is reached
+                while (pos >= 0) and (pos < 64) and ((pos % 8 != 0) or (direction not in [-9, -1, 7])) and (
+                        (pos % 8 != 7) or (direction not in [-7, 1, 9])):
+                    # If the square is empty, it's not a capture
+                    if not ((current_board >> np.uint64(pos)) & np.uint64(1)) and not ((opponent_board >> np.uint64(pos)) & np.uint64(1)):
+                        break
 
-                j += 1
+                    # If the square is occupied by the opponent, add it to the captures
+                    if (opponent_board >> np.uint64(pos)) & np.uint64(1):
+                        num_captures += 1
+                        captures_board |= np.uint64(1) << np.uint64(pos)
 
-        return move_mask
+                    # If the square is occupied by the current player, a capture has been found
+                    if (current_board >> np.uint64(pos)) & np.uint64(1):
+                        if num_captures > 0:
+                            legal_moves_board |= np.uint64(1) << np.uint64(square)
+                        break
+
+                    # Move to the next square along the current direction
+                    pos += direction
+
+        return legal_moves_board
 
     def __line_cap(self, b: BitBoard, m: Move):
         opp = self._get_bitboard(opposite(b.color))
@@ -197,9 +216,8 @@ class GameBoard:
 
         mask = np.uint64(1 << m.pos)
         f_fin = 0
-        possibility = 0
 
-        for i in range(DIR_COUNT):
+        for i in range(DIRECTION_COUNT):
             to_change = search = 0
             self.__update_hold_mask(mask, i)
 
