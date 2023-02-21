@@ -78,15 +78,15 @@ class BitBoard:
         if pos < 0 or pos > 63:
             raise ValueError(f'Expected pos between 0 and 63 inclusive. Received {pos}')
 
-        mask = np.uint64(1 << pos)
+        mask = np.uint64(np.uint64(1) << np.uint64(pos))
         self.bits |= mask
 
     def get_bit_state(self, p):
-        mask = np.uint64(1 << p)
+        mask = np.uint64(1) << np.uint64(p)
         return (self.bits & mask) != 0
 
     def disable_bit(self, p):
-        mask = np.uint64(1 << p)
+        mask = np.uint64(np.uint64(1) << np.uint64(p))
         self.bits &= ~mask
 
     def bitcount(self):
@@ -96,7 +96,7 @@ class BitBoard:
         return np.binary_repr(self.bits, 64)
 
     def apply_move(self, m: Move):
-        self.set_bit(1 << m.pos)
+        self.set_bit(m.pos)
 
 
 class GameBoard:
@@ -154,7 +154,8 @@ class GameBoard:
     def apply_move(self, b: BitBoard, m: Move):
         b.apply_move(m)
 
-        self.__set_for_color(b)
+        self._set_for_color(b)
+        self._line_cap(m)
 
     def _is_game_complete(self):
         p_bits = self.player_board.bits
@@ -208,47 +209,53 @@ class GameBoard:
 
         return legal_moves_board
 
-    def __line_cap(self, b: BitBoard, m: Move):
-        opp = self._get_bitboard(opposite(b.color))
+    def _line_cap(self, move: Move):
+        pos = move.pos
+        bitboard = self._get_bitboard(move.color)
+        opp_board = self._get_bitboard(opposite(move.color))
 
-        self_bits = b.bits
-        o_bits = opp.bits
+        for direction in range(DIRECTION_COUNT):
+            direction_mask = DIR_MASKS[direction]
+            increment = DIR_INCREMENTS[direction]
+            flipped = False
 
-        mask = np.uint64(1 << m.pos)
-        f_fin = 0
+            # check the first piece in the given direction
+            pos_to_check = np.uint64(pos + increment)
+            if (pos_to_check > 63) or (pos_to_check < 0):
+                continue
+            if (direction_mask & (np.uint64(1) << pos_to_check)) == 0:
+                continue
+            if not opp_board.get_bit_state(pos_to_check):
+                continue
 
-        for i in range(DIRECTION_COUNT):
-            to_change = search = 0
-            self.__update_hold_mask(mask, i)
-
-            possibility = o_bits & search
-
-            while possibility != 0:
-                to_change |= possibility
-                self.__update_hold_mask(mask, i)
-
-                if (self_bits & search) != 0:
-                    f_fin |= to_change
+            # continue capturing in the direction until an empty space, same color, or edge is reached
+            pos_to_flip = [pos_to_check]
+            pos_to_check += increment
+            while (pos_to_check > 0) and (pos_to_check < 63) and (direction_mask & (np.uint64(1) << pos_to_check)):
+                if opp_board.get_bit_state(pos_to_check):
+                    pos_to_flip.append(pos_to_check)
+                elif bitboard.get_bit_state(pos_to_check):
+                    for p in pos_to_flip:
+                        opp_board.disable_bit(p)
+                        bitboard.set_bit(p)
+                    flipped = True
+                    break
+                else:
                     break
 
-                possibility = o_bits & search
+                pos_to_check += increment
 
-        self_bits |= f_fin
-        o_bits = (~f_fin) & o_bits
+            if flipped:
+                self._set_for_color(bitboard)
+                self._set_for_color(opp_board)
 
-        b.bits = self_bits
-        opp.bits = o_bits
-
-        self.__set_for_color(b)
-        self.__set_for_color(opp)
-
-    def __get_opposite_board(self, b: BitBoard):
+    def _get_opposite_board(self, b: BitBoard):
         if b.color == self.p_color:
             return self.opp_board
 
         return self.player_board
 
-    def __update_hold_mask(self, hold_mask, i):
+    def _update_hold_mask(self, hold_mask, i):
         if DIR_INCREMENTS[i] > 0:
             hold_mask = np.uint64(hold_mask << DIR_INCREMENTS[i]) & DIR_MASKS[i]
         else:
@@ -258,7 +265,7 @@ class GameBoard:
     def count_pieces(self, c):
         return int(self._get_bitboard(c).bits.count('1'))
 
-    def __set_for_color(self, b: BitBoard):
+    def _set_for_color(self, b: BitBoard):
         """Updates bitboard based on color"""
         if b.color == self.player_board.color:
             self.player_board = b
