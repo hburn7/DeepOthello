@@ -24,7 +24,10 @@ def main():
     # Greeting log
     greet()
 
-    board = GameBoard(BitBoard(color.WHITE), BitBoard(color.BLACK))
+    bw = BitBoard(color.WHITE)
+    bb = BitBoard(color.BLACK)
+
+    board = GameBoard(bw, bb)
     board.print()
 
     logger.info('hello')

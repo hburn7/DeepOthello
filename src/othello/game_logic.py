@@ -6,6 +6,9 @@ from src.core.logger import logger
 
 from enum import Enum
 
+WHITE = 1
+BLACK = -1
+
 BLACK_BITS = np.uint64(0x0000000810000000)
 WHITE_BITS = np.uint64(0x0000001008000000)
 DIR_COUNT = 8
@@ -24,20 +27,17 @@ DIR_MASKS = np.array([
 ], dtype=np.uint64)
 
 
-class Color(Enum):
-    BLACK = -1
-    WHITE = 1
 
 
-def opposite(c: Color):
-    if c == Color.BLACK:
-        return Color.WHITE
+def opposite(c):
+    if c == BLACK:
+        return WHITE
 
-    return Color.BLACK
+    return BLACK
 
 
 class Move:
-    def __init__(self, c: Color, pos=-1, is_pass=True):
+    def __init__(self, c, pos=-1, is_pass=True):
         self.color = c
         self.pos = pos
         self.is_pass = is_pass
@@ -47,19 +47,21 @@ class Move:
 
 
 class BitBoard:
-    def __init__(self, c: Color, bits: np.uint64 = 0):
+    def __init__(self, c, bits: np.uint64 = 0):
         self.color = c
 
         if bits != np.uint64(0):
             self.bits = bits
         else:  # Initialize default
-            if self.color == Color.BLACK:
+            if self.color == -1:  # Black
                 self.bits = BLACK_BITS
             else:
                 self.bits = WHITE_BITS
 
+        logger.info(self.bits)
+
     def __repr__(self):
-        return f'BitBoard(color={self.color} ({self.color}, bits={self.bits} ({np.binary_repr(self.bits)}))'
+        return f'BitBoard(color={self.color} ({self.color}, bits={self.bits} ({np.binary_repr(self.bits, 64)}))'
 
     def set_bit(self, pos) -> None:
         """
@@ -117,14 +119,14 @@ class GameBoard:
         Returns a bitboard based on the color
         :param c: Color of the bitboard we want to retrieve
         """
-        return self.player_board if c == self.p_color else self.opp_board
+        return self.player_board if c is self.p_color else self.opp_board
 
     def print(self):
         logger.info('    A B C D E F G H')
         logger.info('    * * * * * * * *')
 
-        black = self._get_bitboard(Color.BLACK)
-        white = self._get_bitboard(Color.WHITE)
+        black = self._get_bitboard(BLACK)
+        white = self._get_bitboard(WHITE)
 
         line = ''
         for i in range(63, -1, -1):
@@ -228,7 +230,7 @@ class GameBoard:
             hold_mask = (hold_mask >> -DIR_INCREMENTS[i]) & DIR_MASKS[i]
         return hold_mask
 
-    def count_pieces(self, c: Color):
+    def count_pieces(self, c):
         return int(self._get_bitboard(c).bits.count('1'))
 
     def __set_for_color(self, b: BitBoard):
