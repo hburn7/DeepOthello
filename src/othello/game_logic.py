@@ -65,8 +65,6 @@ class BitBoard:
             else:
                 self.bits = WHITE_BITS
 
-        logger.info(self.bits)
-
     def __repr__(self):
         return f'BitBoard(color={self.color} ({self.color}, bits={self.bits} ({np.binary_repr(self.bits, 64)}))'
 
@@ -105,7 +103,6 @@ class GameBoard:
         self.o_color = opp_board.color
         self.player_board = player_board
         self.opp_board = opp_board
-        print(self)
 
     def __repr__(self):
         return f'GameBoard(player_board={self.player_board}, opp_board={self.opp_board})'
