@@ -15,7 +15,7 @@ WHITE_BITS = np.uint64(0x0000001008000000)
 DIRECTION_COUNT = 8
 UNIVERSE = np.uint64(0xffffffffffffffff)
 
-DIR_INCREMENTS = np.array([8, 9, 1, -7, -8, -9, -1, 7], dtype=np.uint64)
+DIR_INCREMENTS = np.array([8, 9, 1, -7, -8, -9, -1, 7], dtype=int)
 DIR_MASKS = np.array([
     0xFFFFFFFFFFFFFF00,  # North
     0xFEFEFEFEFEFEFE00,  # NorthWest
@@ -36,21 +36,26 @@ def opposite(c):
 
 
 class Move:
-    def __init__(self, c, pos=-1, is_pass=True):
+    def __init__(self, c, pos=-1):
         self.color = c
         self.pos = pos
-        self.is_pass = is_pass
 
     def __repr__(self):
-        return f'Move([{self.pos_to_str()}] c={self.color} (pos={self.pos}, is_pass={self.is_pass})'
+        return f'Move([{self.pos_to_str()}] c={self.color} (pos={self.pos})'
 
     def pos_to_str(self):
-        # This is wrong
-        i = self.pos + 1
-        letters = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
-        letter_idx = int(math.floor(i / 8))
-        remainder = i % 8
-        return f'{letters[letter_idx]} {remainder}'
+        chars = 'abcdefgh'
+
+        row = 7 - int(self.pos / 8)
+        col = 7 - (self.pos % 8)
+
+        if row < 0:
+            row = -row
+        if col < 0:
+            col = -col
+
+        c = chars[col]
+        return f'{c}{row + 1}'
 
 
 class BitBoard:
@@ -103,18 +108,21 @@ class GameBoard:
         self.o_color = opp_board.color
         self.player_board = player_board
         self.opp_board = opp_board
+        self.current_player = -1  # Black moves first
 
     def __repr__(self):
         return f'GameBoard(player_board={self.player_board}, opp_board={self.opp_board})'
 
-    def legal_moves(self, b: BitBoard, o: BitBoard):
+    def legal_moves(self, c):
         """Returns a list of all possible moves for the given bitboard"""
         r = []
-        move_mask = self._generate_move_mask(b, o)
+        bb = self._get_bitboard(c)
+        op_bb = self._get_bitboard(-c)
+        move_mask = self._generate_move_mask(bb, op_bb)
         for i in range(64):
             mask = np.uint64(1 << i)
             if (mask & move_mask) != 0:
-                r.append(Move(b.color, i, False))
+                r.append(Move(bb.color, i))
 
         return r
 
@@ -148,11 +156,13 @@ class GameBoard:
                 logger.info(line)
                 line = ''
 
-    def apply_move(self, b: BitBoard, m: Move):
-        b.apply_move(m)
+    def apply_move(self, m: Move):
+        bb = self._get_bitboard(m.color)
+        bb.apply_move(m)
 
-        self._set_for_color(b)
+        self._set_for_color(bb)
         self._line_cap(m)
+        self.current_player = -self.current_player
 
     def is_game_complete(self):
         p_bits = self.player_board.bits
@@ -207,7 +217,7 @@ class GameBoard:
         return legal_moves_board
 
     def _line_cap(self, move: Move):
-        pos = move.pos
+        pos = np.uint64(move.pos)
         bitboard = self._get_bitboard(move.color)
         opp_board = self._get_bitboard(opposite(move.color))
 
@@ -228,6 +238,7 @@ class GameBoard:
             # continue capturing in the direction until an empty space, same color, or edge is reached
             pos_to_flip = [pos_to_check]
             pos_to_check += increment
+            pos_to_check = np.uint64(pos_to_check)
             while (pos_to_check > 0) and (pos_to_check < 63) and (direction_mask & (np.uint64(1) << pos_to_check)):
                 if opp_board.get_bit_state(pos_to_check):
                     pos_to_flip.append(pos_to_check)
