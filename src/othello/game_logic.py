@@ -36,9 +36,17 @@ def opposite(c):
 
 
 class Move:
-    def __init__(self, c, pos=-1):
+    def __init__(self, c, pos):
         self.color = c
-        self.pos = pos
+
+        if type(pos) == int:
+            self.pos = pos
+        else:
+            try:
+                self.pos = self.str_to_pos(pos)
+            except ValueError as e:
+                logger.warn(f'Could not parse {pos} to pos: {e}')
+                self.pos = -1
 
     def __repr__(self):
         return f'Move([{self.pos_to_str()}] c={self.color} (pos={self.pos})'
@@ -56,6 +64,19 @@ class Move:
 
         c = chars[col]
         return f'{c}{row + 1}'
+
+    def str_to_pos(self, s):
+        """Converts a string to a position, e.g. h4, e2"""
+        chars = 'abcdefgh'
+        x = 7 - chars.index(s[0])
+        y = 8 - int(s[1])
+
+        pos = (y * 8) + x
+
+        if pos < 0 or pos > 63:
+            raise ValueError(f'Position {pos} is out of bounds.')
+
+        return pos
 
 
 class BitBoard:
