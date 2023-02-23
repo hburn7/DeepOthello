@@ -47,11 +47,9 @@ class MCTSNode:
         cur_count = board_copy._get_bitboard(board_copy.current_player).bitcount()
         opp_count = board_copy._get_bitboard(-board_copy.current_player).bitcount()
         if cur_count > opp_count:
-            return board_copy.current_player
-        elif cur_count == opp_count:
+            return 1
+        else:
             return 0
-
-        return -board_copy.current_player
 
     def __repr__(self):
         return f"Move: {self.move} | Wins: {self.wins} | Visits: {self.visits}"
@@ -74,8 +72,7 @@ class MCTS:
                 logger.info(c)
 
         # Return the most positive move for white, most negative move for black
-        index = -1 if self.root.children[0].move.color == 1 else 0
-        s = sorted(self.root.children, key=lambda c: c.visits)[index]
+        s = sorted(self.root.children, key=lambda c: c.visits, reverse=True)[0]
         return s.move
 
     def tree_policy(self, node: MCTSNode):
