@@ -260,7 +260,7 @@ class GameBoard:
             pos_to_flip = [pos_to_check]
             pos_to_check += increment
             pos_to_check = np.uint64(pos_to_check)
-            while (pos_to_check > 0) and (pos_to_check < 63) and (direction_mask & (np.uint64(1) << pos_to_check)):
+            while (pos_to_check > 0) and (pos_to_check < 63) and (direction_mask & (np.uint64(1) << np.uint64(pos_to_check))):
                 if opp_board.get_bit_state(pos_to_check):
                     pos_to_flip.append(pos_to_check)
                 elif bitboard.get_bit_state(pos_to_check):
