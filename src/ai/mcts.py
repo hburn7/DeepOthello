@@ -73,7 +73,9 @@ class MCTS:
             for c in sorted(self.root.children, key=lambda c: c.visits):
                 logger.info(c)
 
-        s = sorted(self.root.children, key=lambda c: c.visits)[-1]
+        # Return the most positive move for white, most negative move for black
+        index = -1 if self.root.children[0].move.color == 1 else 0
+        s = sorted(self.root.children, key=lambda c: c.visits)[index]
         return s.move
 
     def tree_policy(self, node: MCTSNode):

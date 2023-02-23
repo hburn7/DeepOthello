@@ -37,6 +37,7 @@ def opposite(c):
 
 class Move:
     def __init__(self, c, pos):
+        """Represents a move on the board. Pos can be either a string or an int."""
         self.color = c
 
         if type(pos) == int:
@@ -120,7 +121,10 @@ class BitBoard:
         return np.binary_repr(self.bits, 64)
 
     def apply_move(self, m: Move):
-        self.set_bit(m.pos)
+        try:
+            self.set_bit(m.pos)
+        except ValueError:
+            pass
 
 
 class GameBoard:
