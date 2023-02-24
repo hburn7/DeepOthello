@@ -18,7 +18,7 @@ class MCTSNode:
         return len(self.untried_moves) == 0
 
     def is_terminal_node(self):
-        return self.board.is_game_complete()
+        return self.board.is_game_complete() or self.board.legal_moves(self.board.current_player) == 0
 
     def uct_select_child(self):
         s = sorted(self.children, key=lambda c: c.wins / c.visits + np.sqrt(2 * np.log(self.visits) / c.visits))[-1]
@@ -44,12 +44,11 @@ class MCTSNode:
             else:
                 board_copy.apply_pass()
 
-        cur_count = board_copy._get_bitboard(board_copy.current_player).bitcount()
-        opp_count = board_copy._get_bitboard(-board_copy.current_player).bitcount()
+        cur_count = board_copy._get_bitboard(self.move.color).bitcount()
+        opp_count = board_copy._get_bitboard(-self.move.color).bitcount()
         if cur_count > opp_count:
             return 1
-        else:
-            return 0
+        return 0
 
     def __repr__(self):
         return f"Move: {self.move} | Wins: {self.wins} | Visits: {self.visits}"

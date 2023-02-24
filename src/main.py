@@ -22,47 +22,6 @@ def greet():
 greet()
 
 
-def main():
-    bw = BitBoard(color.WHITE)
-    bb = BitBoard(color.BLACK)
-
-    board = GameBoard(bw, bb)
-
-    while not board.is_game_complete():
-        # Make move for white
-        w = board.player_board
-        b = board.opp_board
-
-        legal_w = board.legal_moves(1)
-        if len(legal_w) == 0:
-            # Pass
-            logger.info('White passes')
-            continue
-
-        # select random move
-        mw = random.choice(legal_w)
-        board.apply_move(mw)
-        logger.info(f'White plays {mw}')
-
-        # print and repeat for black
-        board.print()
-
-        if not board.is_game_complete():
-            legal_b = board.legal_moves(-1)
-
-            if len(legal_b) == 0:
-                logger.info('Black passes')
-                continue
-
-            mb = random.choice(legal_b)
-            board.apply_move(mb)
-            logger.info(f'Black plays {mb}')
-
-            board.print()
-
-    print(f'Score: {board.player_board.bitcount()} W | B {board.opp_board.bitcount()}')
-
-
 def play_once():
     board = GameBoard(BitBoard(1), BitBoard(-1))
     legal = board.legal_moves(-board.current_player)
@@ -86,6 +45,7 @@ def test_moves():
     legal = board.legal_moves(board.current_player)
     print(legal)
 
+
 def play_mcts_full():
     board = GameBoard(BitBoard(1), BitBoard(-1))
     while not board.is_game_complete():
@@ -105,6 +65,7 @@ def play_mcts_full():
         board.apply_move(search)
         board.print()
 
+
 def play_mcts_against_weak_mcts(strong_iters=500, weak_iters=100, strong_color=1):
     board = GameBoard(BitBoard(strong_color), BitBoard(-strong_color))
     while not board.is_game_complete():
@@ -113,14 +74,14 @@ def play_mcts_against_weak_mcts(strong_iters=500, weak_iters=100, strong_color=1
             board.apply_pass()
             continue
 
-        if board.current_player == board.player_board.color:
+        if board.current_player == strong_color:
             mcts = MCTS(board, iter_max=strong_iters, verbose=True)
             search = mcts.search()
             logger.info(f'(strong) {board.current_player} plays {search}')
 
             if search is None:
                 board.apply_pass()
-                logger.info('Black passed')
+                logger.info('(strong) {board.current_player} passed')
                 continue
 
             board.apply_move(search)
@@ -133,36 +94,43 @@ def play_mcts_against_weak_mcts(strong_iters=500, weak_iters=100, strong_color=1
 
             if search is None:
                 board.apply_pass()
-                logger.info('White passed')
+                logger.info('(weak) {board.current_player} passed')
                 continue
 
             board.apply_move(search)
             board.print()
 
-    logger.info(f'Score: {board.player_board.bitcount()} {board.player_board.color} (strong) | {board.opp_board.color} (weak) {board.opp_board.bitcount()}')
+    logger.info(
+        f'Score: {board.player_board.bitcount()} {board.player_board.color} (strong) | {board.opp_board.color} (weak) {board.opp_board.bitcount()}')
 
-def play_mcts_vs_random(iters=350):
-    board = GameBoard(BitBoard(-1), BitBoard(1))
+
+def play_mcts_vs_random(iters=350, agent_color=1):
+    board = GameBoard(BitBoard(agent_color), BitBoard(-agent_color))
     while not board.is_game_complete():
         legal = board.legal_moves(board.current_player)
         if len(legal) == 0:
             board.apply_pass()
             continue
 
-        if board.current_player == board.player_board.color:
+        if board.current_player == agent_color:
             mcts = MCTS(board, iter_max=iters, verbose=True)
             search = mcts.search()
             logger.info(f'{board.current_player} plays {search}')
 
             if search is None:
                 board.apply_pass()
-                logger.info('Black passed')
+                logger.info(f'{board.current_player} passed')
                 continue
 
             board.apply_move(search)
             board.print()
         else:
             # Random
+            if len(legal) == 0:
+                board.apply_pass()
+                logger.info(f'{board.current_player} passed')
+                continue
+
             r_move = random.choice(legal)
             logger.info(f'{board.current_player} plays {r_move}')
             board.apply_move(r_move)
@@ -171,7 +139,9 @@ def play_mcts_vs_random(iters=350):
     logger.info(f'Score: {board.player_board.bitcount()} {board.player_board.color} (agent) | {board.opp_board.color} '
                 f'(agent) {board.opp_board.bitcount()}')
 
-def play_mcts_interactive(display_legal=True, iterations=250, mcts_verbose=False, assistance=False, assistance_iters=100):
+
+def play_mcts_interactive(display_legal=True, iterations=250, mcts_verbose=False, assistance=False,
+                          assistance_iters=100):
     logger.info('Specify color to play as... [1 for white, -1 for black]')
     color = int(input())
     board = GameBoard(BitBoard(color), BitBoard(-color))
@@ -235,4 +205,4 @@ def mcts_player_assistance(assistance_iters, board):
 
 
 if __name__ == '__main__':
-    play_mcts_vs_random(iters=1000)
+    play_mcts_against_weak_mcts(500, 100, 1)
