@@ -34,24 +34,26 @@ class MCTSNode:
         self.visits += 1
         self.wins += result
 
-    def rollout(self):
+    def rollout(self, search_initiator_color: int):
         board_copy: GameBoard = deepcopy(self.board)
         while not board_copy.is_game_complete():
             legal_moves_cur = board_copy.legal_moves(board_copy.current_player)
-            if len(legal_moves_cur) != 0:
+            if len(legal_moves_cur) > 1:
                 # Cur can play
                 board_copy.apply_move(random.choice(legal_moves_cur))
+            elif len(legal_moves_cur) == 1:
+                board_copy.apply_move(legal_moves_cur[0])
             else:
                 board_copy.apply_pass()
 
-        cur_count = board_copy._get_bitboard(self.move.color).bitcount()
-        opp_count = board_copy._get_bitboard(-self.move.color).bitcount()
+        cur_count = board_copy.get_bitboard(search_initiator_color).bitcount()
+        opp_count = board_copy.get_bitboard(-search_initiator_color).bitcount()
         if cur_count > opp_count:
             return 1
         return 0
 
     def __repr__(self):
-        return f"Move: {self.move} | Wins: {self.wins} | Visits: {self.visits}"
+        return f"Move: {self.move} | Wins: {self.wins} | Visits: {self.visits} ({(self.wins / self.visits) * 100:.2f}%)"
 
 
 class MCTS:
@@ -60,10 +62,11 @@ class MCTS:
         self.iter_max = iter_max
         self.verbose = verbose
 
-    def search(self) -> Move:
+    def search(self, return_nodes=False) -> Move | list[MCTSNode]:
         for i in range(self.iter_max):
             node = self.tree_policy(self.root)
-            result = node.rollout()
+            initiation_color = self.root.children[0].move.color
+            result = node.rollout(initiation_color)
             self.backup(node, result)
 
         if self.verbose:
@@ -71,8 +74,12 @@ class MCTS:
                 logger.info(c)
 
         # Return the most positive move for white, most negative move for black
-        s = sorted(self.root.children, key=lambda c: c.visits, reverse=True)[0]
-        return s.move
+        s = sorted(self.root.children, key=lambda c: c.visits, reverse=True)
+
+        if return_nodes:
+            return s
+
+        return s[0].move
 
     def tree_policy(self, node: MCTSNode):
         while not node.is_terminal_node():
@@ -80,7 +87,7 @@ class MCTS:
                 return self.expand(node)
             else:
                 if len(node.children) == 0:
-                    result = node.rollout()
+                    result = node.rollout(self.root.children[0].move.color)
                     self.backup(node, result)
                     return node
                 else:
