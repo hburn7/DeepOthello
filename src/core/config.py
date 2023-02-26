@@ -1,6 +1,3 @@
-from pathlib import Path
-
-from src.core.logger import logger
 from src.othello import color
 
 

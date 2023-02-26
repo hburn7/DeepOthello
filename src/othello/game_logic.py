@@ -1,11 +1,6 @@
-import logging
-import math
 import numpy as np
 
-from src.core import config
 from src.core.logger import logger
-
-from enum import Enum
 
 WHITE = 1
 BLACK = -1
@@ -50,7 +45,7 @@ class Move:
                 self.pos = -1
 
     def __repr__(self):
-        return f'Move([{self.pos_to_str()}] c={self.color} (pos={self.pos})'
+        return f'Move([{self.pos_to_str()}], c={self.color}, pos={self.pos})'
 
     def pos_to_str(self):
         chars = 'abcdefgh'
@@ -141,8 +136,8 @@ class GameBoard:
     def legal_moves(self, c):
         """Returns a list of all possible moves for the given bitboard"""
         r = []
-        bb = self._get_bitboard(c)
-        op_bb = self._get_bitboard(-c)
+        bb = self.get_bitboard(c)
+        op_bb = self.get_bitboard(-c)
         move_mask = self._generate_move_mask(bb, op_bb)
 
         if move_mask == 0:
@@ -155,7 +150,7 @@ class GameBoard:
 
         return r
 
-    def _get_bitboard(self, c):
+    def get_bitboard(self, c):
         """
         Returns a bitboard based on the color
         :param c: Color of the bitboard we want to retrieve
@@ -166,8 +161,8 @@ class GameBoard:
         logger.info('    A B C D E F G H')
         logger.info('    * * * * * * * *')
 
-        black = self._get_bitboard(BLACK)
-        white = self._get_bitboard(WHITE)
+        black = self.get_bitboard(BLACK)
+        white = self.get_bitboard(WHITE)
 
         line = ''
         for i in range(63, -1, -1):
@@ -186,7 +181,7 @@ class GameBoard:
                 line = ''
 
     def apply_move(self, m: Move):
-        bb = self._get_bitboard(m.color)
+        bb = self.get_bitboard(m.color)
         bb.apply_move(m)
 
         self._set_for_color(bb)
@@ -238,8 +233,8 @@ class GameBoard:
 
     def _line_cap(self, move: Move):
         pos = np.uint64(move.pos)
-        bitboard = self._get_bitboard(move.color)
-        opp_board = self._get_bitboard(opposite(move.color))
+        bitboard = self.get_bitboard(move.color)
+        opp_board = self.get_bitboard(opposite(move.color))
 
         for direction in range(DIRECTION_COUNT):
             direction_mask = DIR_MASKS[direction]
@@ -291,7 +286,7 @@ class GameBoard:
         return hold_mask
 
     def count_pieces(self, c):
-        return int(self._get_bitboard(c).bits.count('1'))
+        return int(self.get_bitboard(c).bits.count('1'))
 
     def _set_for_color(self, b: BitBoard):
         """Updates bitboard based on color"""
