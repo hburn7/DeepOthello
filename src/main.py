@@ -1,10 +1,12 @@
+import json
+
 import pyfiglet
 import random
 import numpy as np
-from othello.game_logic import GameBoard, BitBoard, Move
-from othello import color
+from src.othello.game_logic import GameBoard, BitBoard, Move
 from src.core.logger import logger
 from src.ai.mcts import MCTS
+from src.ai.state_save import StateSave, StateSaveDecoder
 
 
 def greeting():
@@ -46,15 +48,15 @@ def test_moves():
     print(legal)
 
 
-def play_mcts_full():
-    board = GameBoard(BitBoard(1), BitBoard(-1))
+def play_mcts_full(iters=1500):
+    board = GameBoard(BitBoard(-1), BitBoard(1))
     while not board.is_game_complete():
         legal = board.legal_moves(board.current_player)
         if len(legal) == 0:
             board.apply_pass()
             continue
 
-        mcts = MCTS(board, iter_max=250, verbose=True)
+        mcts = MCTS(board, iter_max=iters, verbose=True)
         search = mcts.search()
 
         if search is None:
@@ -137,19 +139,22 @@ def play_mcts_vs_random(iters=350, agent_color=1):
             board.print()
 
     logger.info(f'Score: {board.player_board.bitcount()} {board.player_board.color} (agent) | {board.opp_board.color} '
-                f'(agent) {board.opp_board.bitcount()}')
+                f'(random) {board.opp_board.bitcount()}')
 
 
 def play_mcts_interactive(display_legal=True, iterations=250, mcts_verbose=False, assistance=False,
                           assistance_iters=100):
     logger.info('Specify color to play as... [1 for white, -1 for black]')
     color = int(input())
+
+    # player_board = human, opp = agent
     board = GameBoard(BitBoard(color), BitBoard(-color))
 
     while not board.is_game_complete():
         legal = board.legal_moves(board.current_player)
         if len(legal) == 0:
             board.apply_pass()
+            logger.info(f'{board.current_player} passed (forced)')
             continue
 
         # Agent plays MCTS
@@ -174,6 +179,7 @@ def play_mcts_interactive(display_legal=True, iterations=250, mcts_verbose=False
             board.print()
             # Interactive
             logger.info('Specify move... [e.g. a1, b2], or have agent help you with "help"')
+
             valid = False
             while not valid:
                 move = input()
@@ -196,6 +202,45 @@ def play_mcts_interactive(display_legal=True, iterations=250, mcts_verbose=False
             logger.info(f'{board.current_player} plays {interactive_move}')
             board.print()
 
+    logger.info(f'Score: {board.player_board.bitcount()} (human [{board.player_board.color}]) | '
+                f'(agent [{board.opp_board.color}) {board.opp_board.bitcount()}')
+
+
+def mcts_save_data(iters=1600):
+    board = GameBoard(BitBoard(-1), BitBoard(1))
+
+    game_data = []
+    while not board.is_game_complete():
+        legal = board.legal_moves(board.current_player)
+        if len(legal) == 0:
+            board.apply_pass()
+            continue
+
+        decoder = StateSaveDecoder()
+        current = decoder.find_best_move(board.player_board.bits, board.opp_board.bits, board.current_player)
+        if current is StateSave:
+            logger.info('Found save, skipping...')
+            board.apply_move(current.results[0].move)
+            board.print()
+            continue
+
+        mcts = MCTS(board, iter_max=iters, verbose=True)
+        search_nodes = mcts.search(return_nodes=True)
+
+        # player must be black and opp must be white!
+        state_save = StateSave(board.player_board.bits, board.opp_board.bits, board.current_player, search_nodes)
+        game_data.append(state_save.to_json())
+
+        best = search_nodes[0].move
+
+        logger.info(f'{board.current_player} plays {best}')
+        board.apply_move(best)
+        board.print()
+
+    # save to data.json
+    with open('data.json', 'w') as f:
+        json.dump(game_data, f, indent=4)
+
 
 def mcts_player_assistance(assistance_iters, board):
     logger.info('Player assistance processing...')
@@ -205,4 +250,4 @@ def mcts_player_assistance(assistance_iters, board):
 
 
 if __name__ == '__main__':
-    play_mcts_against_weak_mcts(500, 100, 1)
+    play_mcts_interactive(display_legal=True, iterations=1000, mcts_verbose=True, assistance=False, assistance_iters=500)
