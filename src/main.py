@@ -6,7 +6,7 @@ import numpy as np
 from src.othello.game_logic import GameBoard, BitBoard, Move
 from src.core.logger import logger
 from src.ai.mcts import MCTS
-from src.ai.state_save import StateSave, StateSaveDecoder
+from src.ai.state_save import StateSave, StateSaveDecoder, SavedMoveData
 
 
 def greeting():
@@ -207,40 +207,70 @@ def play_mcts_interactive(display_legal=True, iterations=250, mcts_verbose=False
 
 
 def mcts_save_data(iters=1600):
-    board = GameBoard(BitBoard(-1), BitBoard(1))
+    """Save data from MCTS games to file. Alternates random play between players each game
+    to maximize saved data."""
+    logger.info(f'Starting MCTS save_data session with {iters} iterations')
+    random_player = 1
 
-    game_data = []
-    while not board.is_game_complete():
-        legal = board.legal_moves(board.current_player)
-        if len(legal) == 0:
-            board.apply_pass()
-            continue
-
+    while True:
+        board = GameBoard(BitBoard(-1), BitBoard(1))
         decoder = StateSaveDecoder()
-        current = decoder.find_best_move(board.player_board.bits, board.opp_board.bits, board.current_player)
-        if current is StateSave:
-            logger.info('Found save, skipping...')
-            board.apply_move(current.results[0].move)
-            board.print()
-            continue
+        logger.info('Loading previously stored data...')
+        game_data = decoder.data if decoder.data is not None else []
+        logger.info(f'Loaded {len(game_data)} states')
+        logger.info('Starting new game...')
+        move_count = 1
+        try:
+            while not board.is_game_complete():
+                legal = board.legal_moves(board.current_player)
+                if len(legal) == 0:
+                    board.apply_pass()
+                    continue
 
-        mcts = MCTS(board, iter_max=iters, verbose=True)
-        search_nodes = mcts.search(return_nodes=True)
+                if board.current_player == random_player:
+                    r_move = random.choice(legal)
+                    logger.info(f'{board.current_player} plays {r_move} (random)')
+                    board.apply_move(r_move)
+                    continue
 
-        # player must be black and opp must be white!
-        state_save = StateSave(board.player_board.bits, board.opp_board.bits, board.current_player, search_nodes)
-        game_data.append(state_save.to_json())
+                current = decoder.find_best_move(board.player_board.bits, board.opp_board.bits, board.current_player)
+                if isinstance(current, SavedMoveData):
+                    logger.info(f'Found save for move {move_count}, skipping...')
+                    board.apply_move(Move(board.current_player, current.pos))
+                    move_count += 1
+                    continue
 
-        best = search_nodes[0].move
+                mcts = MCTS(board, iter_max=iters, verbose=False)
+                search_nodes = mcts.search(return_nodes=True)
 
-        logger.info(f'{board.current_player} plays {best}')
-        board.apply_move(best)
-        board.print()
+                # player must be black and opp must be white
+                saves = []
+                for node in search_nodes:
+                    saves.append(SavedMoveData(node.move.pos, node.move.pos_to_str(), node.wins, node.visits, node.wins / node.visits))
 
-    # save to data.json
-    with open('data.json', 'w') as f:
-        json.dump(game_data, f, indent=4)
+                state_save = StateSave(board.player_board.bits, board.opp_board.bits, board.current_player, saves)
+                game_data.append(state_save.to_json())
 
+                best = search_nodes[0].move
+
+                logger.info(f'{board.current_player} plays {best}')
+                board.apply_move(best)
+                move_count += 1
+
+            random_player = -random_player
+
+            # save to data.json
+            with open('data.json', 'w') as f:
+                json.dump(game_data, f, indent=4)
+        except:
+            logger.exception('Error occurred, saving data...')
+
+            # save to data.json
+            with open('data.json', 'w') as f:
+                json.dump(game_data, f, indent=4)
+                logger.info('Data saved as part of error handling')
+
+            break
 
 def mcts_player_assistance(assistance_iters, board):
     logger.info('Player assistance processing...')
@@ -250,4 +280,4 @@ def mcts_player_assistance(assistance_iters, board):
 
 
 if __name__ == '__main__':
-    play_mcts_interactive(display_legal=True, iterations=1000, mcts_verbose=True, assistance=False, assistance_iters=500)
+    mcts_save_data()
