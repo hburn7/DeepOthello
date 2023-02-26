@@ -1,8 +1,13 @@
 import json
+import multiprocessing
 
 import pyfiglet
 import random
 import numpy as np
+
+from multiprocessing import Pool
+import time
+
 from src.othello.game_logic import GameBoard, BitBoard, Move
 from src.core.logger import logger
 from src.ai.mcts import MCTS
@@ -206,18 +211,20 @@ def play_mcts_interactive(display_legal=True, iterations=250, mcts_verbose=False
                 f'(agent [{board.opp_board.color}) {board.opp_board.bitcount()}')
 
 
-def mcts_save_data(iters=1600):
+def mcts_save_data(iters=1600) -> []:
     """Save data from MCTS games to file. Alternates random play between players each game
     to maximize saved data."""
     logger.info(f'Starting MCTS save_data session with {iters} iterations')
     random_player = 1
 
+    decoder = StateSaveDecoder()
+    logger.info('Loading previously stored data...')
+    game_data = decoder.data if decoder.data is not None else []
+    logger.info(f'Loaded {len(game_data)} states')
+
     while True:
         board = GameBoard(BitBoard(-1), BitBoard(1))
-        decoder = StateSaveDecoder()
-        logger.info('Loading previously stored data...')
-        game_data = decoder.data if decoder.data is not None else []
-        logger.info(f'Loaded {len(game_data)} states')
+
         logger.info('Starting new game...')
         move_count = 1
         try:
@@ -246,7 +253,8 @@ def mcts_save_data(iters=1600):
                 # player must be black and opp must be white
                 saves = []
                 for node in search_nodes:
-                    saves.append(SavedMoveData(node.move.pos, node.move.pos_to_str(), node.wins, node.visits, node.wins / node.visits))
+                    saves.append(SavedMoveData(node.move.pos, node.move.pos_to_str(), node.wins, node.visits,
+                                               node.wins / node.visits))
 
                 state_save = StateSave(board.player_board.bits, board.opp_board.bits, board.current_player, saves)
                 game_data.append(state_save.to_json())
@@ -259,18 +267,46 @@ def mcts_save_data(iters=1600):
 
             random_player = -random_player
 
-            # save to data.json
-            with open('data.json', 'w') as f:
-                json.dump(game_data, f, indent=4)
+            # If we are starting a new game, end here. We complete 1 game per color in this function.
+            if random_player == 1:
+                logger.info('Exiting save_data session')
+                return game_data
         except:
-            logger.exception('Error occurred, saving data...')
+            logger.exception('Aborting...')
+            return game_data
 
-            # save to data.json
-            with open('data.json', 'w') as f:
-                json.dump(game_data, f, indent=4)
-                logger.info('Data saved as part of error handling')
 
-            break
+
+def _save_data_json(game_data):
+    with open('data.json', 'w') as f:
+        json.dump(game_data, f, indent=4)
+
+
+def save_data_multiprocessing(iters=1600):
+    n_processes = multiprocessing.cpu_count()
+    pool = Pool(processes=n_processes)
+
+    results = []
+    for i in range(n_processes):
+        results.append(pool.apply_async(mcts_save_data, args=(iters,)))
+
+    pool.close()
+    pool.join()
+
+    final_data = []
+
+    for r in results:
+        game_data = r.get()
+        logger.info(f'Found {len(game_data)} states to save')
+        for d in game_data:
+            if d not in final_data:
+                final_data.append(d)
+
+
+    logger.info(f'Final data size: {len(final_data)} states')
+    _save_data_json(final_data)
+    logger.info('Saved data to file')
+
 
 def mcts_player_assistance(assistance_iters, board):
     logger.info('Player assistance processing...')
@@ -280,4 +316,9 @@ def mcts_player_assistance(assistance_iters, board):
 
 
 if __name__ == '__main__':
-    mcts_save_data()
+    i = 1
+    while True:
+        logger.info(f'Data generation loop {i}')
+        save_data_multiprocessing()
+
+        i += 1
