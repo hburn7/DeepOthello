@@ -6,7 +6,6 @@ import random
 import numpy as np
 
 from multiprocessing import Pool
-import time
 
 from src.othello.game_logic import GameBoard, BitBoard, Move
 from src.core.logger import logger
@@ -147,8 +146,8 @@ def play_mcts_vs_random(iters=350, agent_color=1):
                 f'(random) {board.opp_board.bitcount()}')
 
 
-def play_mcts_interactive(display_legal=True, iterations=250, mcts_verbose=False, assistance=False,
-                          assistance_iters=100):
+def play_mcts_interactive(display_legal=True, iterations=1200, mcts_verbose=False, assistance=False,
+                          assistance_iters=650):
     logger.info('Specify color to play as... [1 for white, -1 for black]')
     color = int(input())
 
@@ -315,10 +314,15 @@ def mcts_player_assistance(assistance_iters, board):
     logger.info(f'Agent recommends: {search}')
 
 
-if __name__ == '__main__':
+def gather_data():
+    """Call this function as main when gathering new game data."""
     i = 1
     while True:
         logger.info(f'Data generation loop {i}')
         save_data_multiprocessing()
 
         i += 1
+
+
+if __name__ == '__main__':
+    play_mcts_against_weak_mcts(strong_iters=1200, weak_iters=800, strong_color=-1)
