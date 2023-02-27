@@ -230,47 +230,43 @@ class GameBoard:
 
         return move_mask
 
-
     def _line_cap(self, move: Move):
         pos = np.uint64(move.pos)
-        bitboard = self.get_bitboard(move.color)
+        p_board = self.get_bitboard(move.color)
         opp_board = self.get_bitboard(opposite(move.color))
 
-        for direction in range(DIRECTION_COUNT):
-            direction_mask = DIR_MASKS[direction]
-            increment = DIR_INCREMENTS[direction]
-            flipped = False
+        mask = np.left_shift(np.uint64(1), pos)
+        f_fin = np.uint64(0)
 
-            # check the first piece in the given direction
-            pos_to_check = np.uint64(pos + increment)
-            if (pos_to_check > 63) or (pos_to_check < 0):
-                continue
-            if (direction_mask & (np.uint64(1) << pos_to_check)) == 0:
-                continue
-            if not opp_board.get_bit_state(pos_to_check):
-                continue
+        for i in range(DIRECTION_COUNT):
+            to_change = np.uint64(0)
 
-            # continue capturing in the direction until an empty space, same color, or edge is reached
-            pos_to_flip = [pos_to_check]
-            pos_to_check += increment
-            pos_to_check = np.uint64(pos_to_check)
-            while (pos_to_check > 0) and (pos_to_check < 63) and (direction_mask & (np.uint64(1) << np.uint64(pos_to_check))):
-                if opp_board.get_bit_state(pos_to_check):
-                    pos_to_flip.append(pos_to_check)
-                elif bitboard.get_bit_state(pos_to_check):
-                    for p in pos_to_flip:
-                        opp_board.disable_bit(p)
-                        bitboard.set_bit(p)
-                    flipped = True
-                    break
+            if DIR_INCREMENTS[i] > 0:
+                search = np.left_shift(np.uint64(mask), np.uint64(DIR_INCREMENTS[i])) & DIR_MASKS[i]
+            else:
+                search = np.right_shift(np.uint64(mask), np.uint64(-DIR_INCREMENTS[i])) & DIR_MASKS[i]
+
+            possibility = np.bitwise_and(opp_board.bits, search)
+
+            while possibility != 0:
+                to_change |= possibility
+
+                if DIR_INCREMENTS[i] > 0:
+                    search = np.left_shift(np.uint64(search), np.uint64(DIR_INCREMENTS[i])) & DIR_MASKS[i]
                 else:
+                    search = np.right_shift(np.uint64(search), np.uint64(-DIR_INCREMENTS[i])) & DIR_MASKS[i]
+
+                if (np.bitwise_and(p_board.bits, search) != 0):
+                    f_fin |= to_change
                     break
 
-                pos_to_check += increment
+                possibility = np.bitwise_and(opp_board.bits, search)
 
-            if flipped:
-                self._set_for_color(bitboard)
-                self._set_for_color(opp_board)
+        p_board.bits |= f_fin
+        opp_board.bits = (np.bitwise_not(f_fin)) & opp_board.bits
+
+        self._set_for_color(p_board)
+        self._set_for_color(opp_board)
 
     def _get_opposite_board(self, b: BitBoard):
         if b.color == self.p_color:
