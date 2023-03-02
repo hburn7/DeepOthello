@@ -325,4 +325,4 @@ def gather_data():
 
 
 if __name__ == '__main__':
-    play_mcts_against_weak_mcts(strong_iters=1200, weak_iters=800, strong_color=-1)
+    gather_data()
