@@ -51,6 +51,10 @@ class StateSaveDecoder(json.JSONDecoder):
         if Path('data.json').exists():
             with open('data.json', 'r') as f:
                 self.data = json.load(f)
+
+                # convert str to dict
+                self.data = [self._as_dict(d) for d in self.data]
+
         else:
             self.data = None
 

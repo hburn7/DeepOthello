@@ -7,6 +7,7 @@ import numpy as np
 
 from multiprocessing import Pool
 
+from src.ai import nn as nn
 from src.othello.game_logic import GameBoard, BitBoard, Move
 from src.core.logger import logger
 from src.ai.mcts import MCTS
@@ -325,4 +326,4 @@ def gather_data():
 
 
 if __name__ == '__main__':
-    gather_data()
+    nn.load_and_test()
