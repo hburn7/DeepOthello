@@ -49,7 +49,7 @@ def train():
     ])
 
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
-    model.fit(x_train, y_train, epochs=18000)
+    model.fit(x_train, y_train, epochs=8000)
 
     test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
 
@@ -71,8 +71,8 @@ def load_and_test():
             if pred[j] < 0.01:
                 pred[j] = 0
 
-        print(f'Prediction: {pred}')
-        print(f'Actual: {y_test[i]}')
+        print(f'Prediction:\n{pred}')
+        print(f'Actual:\n{y_test[i]}')
         print(f'Error: {np.sum(np.abs(predictions[i] - y_test[i]))}')
         print()
 
